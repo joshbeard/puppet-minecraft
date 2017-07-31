@@ -22,6 +22,7 @@ define minecraft::instance (
   $jar                  = 'minecraft_server.jar',
   $server_properties    = {},
   $java_command         = 'java',
+  $zip_file             = false,
 ) {
   $_install_dir = $install_dir ? {
     undef => "${minecraft::install_base}/${instance}",
@@ -45,6 +46,7 @@ define minecraft::instance (
     group       => $group,
     jar         => $jar,
     require     => File[$dirs],
+    zip_file    => $zip_file,
   }
 
   if $ops != undef {

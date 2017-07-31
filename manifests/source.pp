@@ -4,6 +4,7 @@ define minecraft::source (
   $user,
   $group,
   $jar,
+  $zip_file,
 ) {
 
   case $source {
@@ -23,11 +24,23 @@ define minecraft::source (
     }
   }
 
-  archive { "${title}_minecraft_server":
-    ensure  => 'present',
-    source  => $download,
-    path    => "${install_dir}/${jar}",
-    user    => $user,
+  if ($zip_file) {
+    archive { "${title}_minecraft_server":
+      ensure       => 'present',
+      source       => $download,
+      path         => "${install_dir}/download.zip",
+      extract_path => $install_dir,
+      user         => $user,
+      extract      => true,
+      creates      => "${install_dir}/${jar}"
+    }
+  } else {
+    archive { "${title}_minecraft_server":
+      ensure  => 'present',
+      source  => $download,
+      path    => "${install_dir}/${jar}",
+      user    => $user,
+    }
   }
 
   file { "${install_dir}/${jar}":
