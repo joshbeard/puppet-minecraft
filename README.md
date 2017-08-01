@@ -10,13 +10,13 @@
 `puppet-minecraft` installs and configures your Minecraft or
 CraftBukkit server with Puppet!
 
-This is a derivative work of Branan Purvine-Riley's
-[Minecraft module](http://forge.puppetlabs.com/branan/minecraft), with
-improvements including: version selection, CraftBukkit support, a
-plugin resource, and settings managed via templates. It is released
-under the original Apache License, Version 2.0.
+This fork of `puppet-minecraft` (`nhinds/puppet-minecraft`) brings support for:
+* Ubuntu 16.04 with systemd
+* managing ops/whitelist/banned IPs/banned players with the updated JSON format
+* multiple server instances (thanks to a branch of `joshbeard/puppet-minecraft`)
+* Minecraft 1.12
 
-This module has been tested on Ubuntu Server 12.04.4 with Puppet 3.8.7.
+This module has been tested on Ubuntu Server 16.04 with Puppet 3.8.5.
 
 ## Usage
 
@@ -24,6 +24,8 @@ The simplest possible usage is:
 
 ```puppet
 include minecraft
+
+minecraft::instance { my-instance: }
 ```
 
 This entire class is parameterized (see the minecraft class for
@@ -34,15 +36,27 @@ behaves:
 
 * `user`: The user account for the Minecraft service
 * `group`: The user group for the Minecraft service
+* `install_base`: The base directory in which Minecraft instances will be installed under
+* `instances`: A hash of instances. Keys are the name of the instance, values are a hash of parameters for `minecraft::instance`
+* `instance_defaults`: The default parameters for all instances
+* `manage_java`: Manage the JRE package
+
+`minecraft::instance` resources have the following parameters:
+* `user`: The user account for the Minecraft service
+* `group`: The user group for the Minecraft service
 * `install_dir`: The directory in which Minecraft stores its data
 * `source`: Minecraft (semvar) or CraftBukkit ('recommended',
   'beta', or 'dev'), or direct source (URL for `wget`)
-* `autostart`: Start the service at boot
-* `manage_java`: Manage the JRE package
-* `heap_size`: The maximum Java heap size for the Minecraft service
+* `service_ensure`: What state the service should be (e.g. 'running')
+* `xmx`: The maximum Java heap size for the Minecraft service
   in megabytes
-* `heap_start`: The initial Java heap size for the Minecraft service
+* `xms`: The initial Java heap size for the Minecraft service
   in megabytes
+* `ops`: Players which should be ops
+* `banned_players`: Players which should be banned
+* `banned_ips`: IPs which should be banned
+* `white_list_players`: Players which should be whitelisted. Does nothing unless the `white-list` server property is also set to `true`
+* `server_properties`: Hash of properties to set in Minecraft's `server.properties`
 
 ### Minecraft Versions / CraftBukkit Builds
 
@@ -68,55 +82,19 @@ downloads were hosted at a different
 old, this module does not currently support it. Submit a Pull Request
 if you add support, or make an issue if you want me to do so.
 
-### Server configuration
-
-Full configuration of the Minecraft server is supported. Simply
-specify the parameter with the server setting when declaring the
-class:
-
-```puppet
-class { 'minecraft':
-  source     => 'dev',
-  heap_size  => 2048,
-  difficulty => 2,
-  motd       => 'Managed by Puppet!',
-  ops        => [ 'op1', 'op2' ]
-}
-```
-
-[Hiera](http://docs.puppetlabs.com/hiera/1/puppet.html) configuration
-can also be done. In [YAML](http://www.yaml.org/):
-
-```yaml
-minecraft::source: 'dev'
-minecraft::heap_size: 2048
-minecraft::difficulty: 2
-minecraft::motd: 'Managed by Puppet, with Hiera!'
-minecraft::ops:
-  - 'op1'
-  - 'op2'
-```
-
-Note that the server property name will use an underscore instead of a
-dash, and may not exactly match the `server.properties` name. Also,
-refrain from using 'undef' for the server properties, as Puppet will
-place 'undef' as a string in the template; instead, use the emptry
-string: ''. (It's either this or add a bunch of template logic to
-check for an undef value first, for every parameter, do it and Pull
-Request if you'd like.)
-
 ### Managing players
 
-This module manages the Minecraft player settings through
-templates. To add players to a particular list, declare an array of
+This module manages the Minecraft player settings.
+To add players to a particular list, declare an array of
 them:
 
 ```puppet
-class { 'minecraft':
-  ops                => 'me',
+minecraft::instance { 'my-instance':
+  ops                => ['me'],
   banned_players     => [ 'griefer', 'badboy' ],
-  banned_ips         => '127.0.0.1',         # Don't actually do this
-  white_list_players => [ 'my_best_friend' ] # Minecraft auto-includes ops
+  banned_ips         => ['127.0.0.1'],         # Don't actually do this
+  white_list_players => [ 'my_best_friend' ],
+  server_properties  => { 'white-list' => true },
 }
 ```
 
@@ -124,13 +102,11 @@ Note that when any of these parameters is set to undef, Puppet will
 not manage the corresponding file, allowing you to manage it via
 commands in Minecraft. However, if specified, Puppet will manage the
 file, and overwrite any manual changes on the next application of
-Puppet. (There is also the "replace" attribute on the Puppet file
-resource, but this is not what we want because, if the file is being
-managed, we want changes in the manifest to be updated in the files.)
+Puppet.
 
-To enable the whitelist, you must both set it to true in the class,
+To enable the whitelist, you must both set `white-list` to `true` in `server_properties`
 and add players to the whitelist here, as they affect separate
-templates. Additionally, blacklists (banned IPs/players) is pointless
+files. Additionally, blacklists (banned IPs/players) is pointless
 if the whitelist is enabled, and is only shown here concurrently for
 demonstration purposes.
 

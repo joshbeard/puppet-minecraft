@@ -34,6 +34,37 @@ describe 'minecraft::source' do
                                                                                             'Archive[minecraft_server]'])
         end
       end
+
+      context 'with zip download' do
+        let :params do
+          {
+            zip_file: true
+          }
+        end
+
+        it { is_expected.to compile.with_all_deps }
+        it { is_expected.to contain_class('minecraft::source') }
+
+        it 'downloads the server' do
+          is_expected.to contain_archive('minecraft_server').with(ensure:  'present',
+                                                                  path:    '/opt/minecraft/minecraft_server.jar',
+                                                                  user:    'minecraft',
+                                                                  zip_file: true,
+                                                                  source:  'https://s3.amazonaws.com/Minecraft.Download/versions/1.7.4/minecraft_server.1.7.4.jar')
+
+          is_expected.to contain_archive('minecraft_server').that_requires('User[minecraft]')
+        end
+
+        it 'enforces ownership on server file' do
+          is_expected.to contain_file('/opt/minecraft/minecraft_server.jar').with(owner: 'minecraft',
+                                                                                  group: 'minecraft',
+                                                                                  mode: '0644')
+
+          is_expected.to contain_file('/opt/minecraft/minecraft_server.jar').that_requires(['User[minecraft]',
+                                                                                            'Group[minecraft]',
+                                                                                            'Archive[minecraft_server]'])
+        end
+      end
     end
   end
 end

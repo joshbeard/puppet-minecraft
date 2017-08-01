@@ -5,7 +5,9 @@ class minecraft::packages {
       distribution => 'jre',
       version      => 'latest',
     }
+    Class['java'] -> Minecraft::Service<| |>
   }
 
   ensure_packages('screen')
+  Package['screen'] -> Minecraft::Service<| |>
 }

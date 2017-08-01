@@ -1,6 +1,6 @@
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:   minecraft
+# Provides:       <%= @instance %>
 # Required-Start: $local_fs $remote_fs
 # Required-Stop:  $local_fs $remote_fs
 # Should-Start:   $network
@@ -12,14 +12,13 @@
 ### END INIT INFO
 
 #Settings
-SERVICE='minecraft_server.jar'
-USERNAME="<%= scope['minecraft::user'] %>"
-MCPATH="<%= scope['minecraft::install_dir'] %>"
-MAX_HEAP="<%= scope['minecraft::heap_size'] %>"
-MIN_HEAP="<%= scope['minecraft::heap_start'] %>"
+SERVICE='<%= @install_dir %>/<%= @jar %>'
+USERNAME="<%= @user %>"
+MCPATH="<%= @install_dir %>"
+MAX_HEAP="<%= @xmx %>"
+MIN_HEAP="<%= @xms %>"
 ## If you have more than one Minecraft instance to control, add additional MCPATH
 ## variables below
-# MCPATH2='/home/mcuser/minecraft2'
 
 
 ME=`whoami`
@@ -38,9 +37,7 @@ mc_start() {
   else
     echo "$SERVICE was not running... starting."
     cd $MCPATH
-    as_user "cd $MCPATH && screen -dmS survival-mc java -Xmx${MAX_HEAP}M -Xms${MIN_HEAP}M -jar minecraft_server.jar nogui"
-  ## Add additional lines for additioanl Minecrat instances below here
-  # as_user "cd $MCPATH2 && screen -dmS creative-mc java -Xmx2048M -Xms2048M -jar minecraft_server.jar nogui"
+    as_user "cd $MCPATH && screen -dmS <%= @instance %> <%= @java_command %> -Xmx${MAX_HEAP} -Xms${MIN_HEAP} <%= @java_args %> -jar $SERVICE nogui"
     sleep 7
     if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
     then
@@ -55,14 +52,10 @@ mc_stop() {
         if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
         then
                 echo "$SERVICE is running... stopping."
-              ## Add a line for each task for each Minecraft server you're controlling
-              as_user "screen -p 0 -S survival-mc -X eval 'stuff \"say SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...\"\015'"
-                # as_user "screen -p 0 -S creative-mc -X eval 'stuff \"say SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...\"\015'"
-                as_user "screen -p 0 -S survival-mc -X eval 'stuff \"save-all\"\015'"
-                # as_user "screen -p 0 -S creative-mc -X eval 'stuff \"save-all\"\015'"
+                as_user "screen -p 0 -S <%= @instance %> -X eval 'stuff \"say SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...\"\015'"
+                as_user "screen -p 0 -S <%= @instance %> -X eval 'stuff \"save-all\"\015'"
                 sleep 10
-                as_user "screen -p 0 -S survival-mc -X eval 'stuff \"stop\"\015'"
-                # as_user "screen -p 0 -S creative-mc -X eval 'stuff \"stop\"\015'"
+                as_user "screen -p 0 -S <%= @instance %> -X eval 'stuff \"stop\"\015'"
                 sleep 7
         else
                 echo "$SERVICE was not running."
@@ -88,7 +81,7 @@ case "$1" in
     mc_start
     ;;
   status)
-    if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $MCPATH > /dev/null
     then
       echo "$SERVICE is running."
     else
@@ -98,7 +91,7 @@ case "$1" in
     ;;
 
   *)
-  echo "Usage: /etc/init.d/minecraft {start|stop|status|restart}"
+  echo "Usage: $0 {start|stop|status|restart}"
   exit 1
   ;;
 esac

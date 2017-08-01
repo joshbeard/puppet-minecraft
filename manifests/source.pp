@@ -1,48 +1,61 @@
-class minecraft::source {
+define minecraft::source (
+  $source,
+  $install_dir,
+  $user,
+  $group,
+  $jar,
+  $zip_file,
+) {
 
-  $jar_name = 'minecraft_server'
-
-  case $minecraft::source {
-    /^(\d+)\.(\d+)\.(\d+)$/,    # Matches Semantic Versioning for vanilla Minecraft, see http://semver.org/
+  case $source {
+    /^(\d+)\.(\d+)(\.(\d+))?$/, # Matches Semantic Versioning for vanilla Minecraft, see http://semver.org/
     /^(\d{2})w(\d{2})[a-z]$/: { # Matches current versioning scheme for vanilla Minecraft snapshots, uses the same download source URL
-      $download = "https://s3.amazonaws.com/Minecraft.Download/versions/${minecraft::source}/minecraft_server.${minecraft::source}.jar"
+      $download = "https://s3.amazonaws.com/Minecraft.Download/versions/${source}/minecraft_server.${source}.jar"
     }
     # Downloads latest type of Bukkit server
     'recommended', 'rb', 'stable': {
       $download = 'http://dl.bukkit.org/latest-rb/craftbukkit.jar'
     }
     'beta', 'dev': {
-      $download = "http://dl.bukkit.org/latest-${minecraft::source}/craftbukkit-${minecraft::source}.jar"
+      $download = "http://dl.bukkit.org/latest-${source}/craftbukkit-${source}.jar"
     }
     default: {
-      $download = $minecraft::source
+      $download = $source
     }
   }
 
-  archive { 'minecraft_server':
-    ensure  => 'present',
-    source  => $download,
-    path    => "${minecraft::install_dir}/minecraft_server.jar",
-    require => [User[$minecraft::user],File[$minecraft::install_dir]],
-    user    => $minecraft::user,
+  if ($zip_file) {
+    archive { "${title}_minecraft_server":
+      ensure       => 'present',
+      source       => $download,
+      path         => "${install_dir}/download.zip",
+      extract_path => $install_dir,
+      user         => $user,
+      extract      => true,
+      creates      => "${install_dir}/${jar}"
+    }
+  } else {
+    archive { "${title}_minecraft_server":
+      ensure  => 'present',
+      source  => $download,
+      path    => "${install_dir}/${jar}",
+      user    => $user,
+    }
   }
 
-  file { "${minecraft::install_dir}/minecraft_server.jar":
+  file { "${install_dir}/${jar}":
     ensure  => 'file',
-    owner   => $minecraft::user,
-    group   => $minecraft::group,
+    owner   => $user,
+    group   => $group,
     mode    => '0644',
-    require => [User[$minecraft::user],
-                Group[$minecraft::group],
-                Archive['minecraft_server'],
-    ],
+    require => Archive["${title}_minecraft_server"],
   }
 
-  file { "${minecraft::install_dir}/eula.txt":
+  file { "${install_dir}/eula.txt":
     ensure  => file,
-    owner   => $minecraft::user,
-    group   => $minecraft::group,
-    content => template('minecraft/eula.txt.erb'),
+    owner   => $user,
+    group   => $group,
+    content => "eula=true\n",
   }
 
 }
