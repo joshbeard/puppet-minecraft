@@ -22,6 +22,7 @@ define minecraft::instance (
   $jar                  = 'minecraft_server.jar',
   $server_properties    = {},
   $java_command         = 'java',
+  $ftb_server_version   = undef,
 ) {
   $_install_dir = $install_dir ? {
     undef => "${minecraft::install_base}/${instance}",
@@ -39,12 +40,13 @@ define minecraft::instance (
   }
 
   minecraft::source { $title:
-    source      => $source,
-    install_dir => $_install_dir,
-    user        => $user,
-    group       => $group,
-    jar         => $jar,
-    require     => File[$dirs],
+    source             => $source,
+    install_dir        => $_install_dir,
+    user               => $user,
+    group              => $group,
+    jar                => $jar,
+    require            => File[$dirs],
+    ftb_server_version => $ftb_server_version,
   }
 
   if $ops != undef {
