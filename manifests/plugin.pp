@@ -1,20 +1,29 @@
 define minecraft::plugin(
   $source,
+  $install_dir,
   $plugin_name  = $title,
-  $ensure       = present
+  $ensure       = present,
+  $user,
+  $group,
+  $checksum        = undef,
+  $checksum_type   = undef,
+  $checksum_url    = undef,
+  $checksum_verify = undef,
 ) {
 
   if $plugin_name =~ /^.*\.jar$/ {
     fail("minecraft plugin title ${plugin_name} must not end in '.jar'")
   }
 
-  archive { $plugin_name:
-    ensure  => $ensure,
-    source  => $source,
-    path    => "${::minecraft::install_dir}/plugins/${plugin_name}.jar",
-    notify  => Service['minecraft'],
-    require => File["${::minecraft::install_dir}/plugins"],
-    user    => $::minecraft::user,
+  archive { $title:
+    ensure          => $ensure,
+    source          => $source,
+    path            => "${install_dir}/plugins/${plugin_name}.jar",
+    user            => $user,
+    checksum        => $checksum,
+    checksum_type   => $checksum_type,
+    checksum_url    => $checksum_url,
+    checksum_verify => $checksum_verify,
   }
 
   if $ensure == present {
@@ -23,11 +32,11 @@ define minecraft::plugin(
     $jar_ensure = $ensure
   }
 
-  file { "${::minecraft::install_dir}/plugins/${plugin_name}.jar":
+  file { "${install_dir}/plugins/${plugin_name}.jar":
     ensure  => $jar_ensure,
-    owner   => $::minecraft::user,
-    group   => $::minecraft::group,
+    owner   => $user,
+    group   => $group,
     mode    => '0644',
-    require => Archive[$plugin_name],
+    require => Archive[$title],
   }
 }

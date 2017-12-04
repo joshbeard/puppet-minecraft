@@ -1,0 +1,25 @@
+# Puppet generated unit for <%= @instance %>.
+
+[Unit]
+Description=Minecraft server
+After=local-fs.target remote-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=<%= @install_dir %>
+User=<%= @user %>
+Group=<%= @group %>
+
+ExecStart=/usr/bin/screen -DmS <%= @instance %> <%= @java_command %> -Xmx<%= @xmx %> -Xms<%= @xms %> <%= @java_args %> -jar <%= @install_dir %>/<%= @jar %> nogui
+
+ExecStop=/usr/bin/screen -p 0 -S <%= @instance %> -X eval 'stuff "say SERVER SHUTTING DOWN IN 10 SECONDS. Saving map..."\015'
+ExecStop=/usr/bin/screen -p 0 -S <%= @instance %> -X eval 'stuff "save-all"\015'
+ExecStop=/bin/sleep 10
+ExecStop=/usr/bin/screen -p 0 -S <%= @instance %> -X eval 'stuff "stop"\015'
+ExecStop=/bin/sleep 7
+
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

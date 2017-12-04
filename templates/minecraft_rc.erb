@@ -1,0 +1,11 @@
+# Managed by Puppet
+# rc config for minecraft_<%= @instance %>
+
+minecraft_<%= @instance %>_enable="<%= @service_enable ? 'YES' : 'NO' %>"
+minecraft_<%= @instance %>_chdir="<%= @install_dir %>"
+minecraft_<%= @instance %>_java_command="<%= @java_command %>"
+minecraft_<%= @instance %>_jar="<%= @install_dir %>/<%= @jar %>"
+minecraft_<%= @instance %>_args="<%= @java_args %>"
+minecraft_<%= @instance %>_xmx="<%= @xmx %>"
+minecraft_<%= @instance %>_xms="<%= @xms %>"
+minecraft_<%= @instance %>_user="<%= @user %>"
